@@ -1,0 +1,22 @@
+{
+  "patent_id": "US-11234567-B2",
+  "title": "Method and System for Autonomous Drone Navigation Using Computer Vision",
+  "inventor": "Jane Doe",
+  "grant_date": "2024-03-12",
+  "abstract": "A system and method for autonomous drone navigation utilizing real-time computer vision processing and machine learning algorithms to detect, classify, and avoid obstacles in dynamic environments. The system incorporates a multi-sensor fusion approach combining LiDAR, stereo cameras, and inertial measurement units to achieve reliable navigation without GPS dependency.",
+  "claims": [
+    {
+      "claim_number": 1,
+      "text": "A method for autonomous aerial vehicle navigation comprising: receiving sensor data from a plurality of onboard sensors including at least one camera and one inertial measurement unit; processing said sensor data using a convolutional neural network to identify obstacles within a predetermined detection radius; computing an optimal flight trajectory that avoids identified obstacles; and transmitting navigation commands to flight control systems based on the computed trajectory."
+    },
+    {
+      "claim_number": 2,
+      "text": "The method of claim 1, wherein the convolutional neural network is trained on a dataset comprising at least one million labeled aerial images representing diverse environmental conditions including urban, rural, and indoor settings."
+    },
+    {
+      "claim_number": 3,
+      "text": "A system for autonomous drone navigation comprising: a multi-rotor aerial platform; a sensor array including stereo cameras, LiDAR unit, and IMU; an onboard processing unit executing real-time obstacle detection algorithms; and a wireless communication module for telemetry transmission."
+    }
+  ],
+  "detailed_description": "The present invention relates to autonomous aerial vehicle navigation systems. Prior art solutions rely heavily on GPS signals which are unreliable in indoor environments and urban canyons. The disclosed system addresses this limitation through a vision-based simultaneous localization and mapping (SLAM) approach. The onboard neural network processes camera feeds at 30 frames per second, identifying obstacles with greater than 95% accuracy in tested environments. The multi-sensor fusion algorithm weighs contributions from each sensor based on environmental conditions, prioritizing LiDAR in low-light scenarios and camera data in well-lit conditions. Path planning utilizes a modified A* algorithm constrained by battery life and payload requirements."
+}

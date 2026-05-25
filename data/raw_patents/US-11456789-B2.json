@@ -1,0 +1,22 @@
+{
+  "patent_id": "US-11456789-B2",
+  "title": "Natural Language Processing System for Legal Document Summarization",
+  "inventor": "Maria Santos",
+  "grant_date": "2024-01-08",
+  "abstract": "An artificial intelligence system for automated analysis and summarization of legal documents including patents, contracts, and regulatory filings. The system employs transformer-based language models fine-tuned on legal corpora to extract key claims, identify precedent relationships, and generate structured summaries suitable for non-expert audiences.",
+  "claims": [
+    {
+      "claim_number": 1,
+      "text": "A computer-implemented method for legal document analysis comprising: receiving an input legal document in text or PDF format; tokenizing the document into semantic segments using domain-specific tokenization rules; applying a fine-tuned transformer model to generate embeddings for each segment; performing similarity search against a vector database of legal precedents; and outputting a structured summary including key claims, relevant precedents, and risk assessment metrics."
+    },
+    {
+      "claim_number": 2,
+      "text": "The method of claim 1, wherein the fine-tuned transformer model is trained on a corpus comprising at least ten million legal documents spanning patent filings, court decisions, and regulatory guidance from jurisdictions including United States, European Union, and World Intellectual Property Organization."
+    },
+    {
+      "claim_number": 3,
+      "text": "A system for patent prior art analysis comprising: a document ingestion module accepting PDF and structured text inputs; an embedding generation pipeline using OpenAI-compatible vector representations; a persistent vector store implementing approximate nearest neighbor search; and a report generation module producing JSON-formatted infringement risk assessments."
+    }
+  ],
+  "detailed_description": "The legal document analysis system addresses the substantial cost and time barriers faced by inventors and small businesses seeking patent protection. Traditional prior art searches require specialized patent attorneys and can cost thousands of dollars per application. The disclosed system automates the identification of potentially conflicting patents by encoding both the user's invention description and existing patent claims into a shared vector space, then retrieving the most semantically similar prior art. The risk assessment component analyzes the degree of overlap between the user's claims and retrieved patents, considering factors such as claim scope, jurisdiction, and prosecution history. Output reports are structured to provide actionable guidance without requiring legal expertise to interpret."
+}

@@ -1,0 +1,22 @@
+{
+  "patent_id": "US-10987654-B1",
+  "title": "Wearable Health Monitoring Device with Continuous Biometric Analysis",
+  "inventor": "Robert Chen",
+  "grant_date": "2023-07-20",
+  "abstract": "A wearable device and associated methods for continuous biometric monitoring, including heart rate variability, blood oxygen saturation, skin temperature, and electrodermal activity. The device employs machine learning models trained on population-scale health data to detect anomalies and predict potential health events up to 48 hours in advance.",
+  "claims": [
+    {
+      "claim_number": 1,
+      "text": "A wearable health monitoring device comprising: a flexible substrate configured to conform to a user's wrist; a photoplethysmography sensor for measuring blood flow characteristics; an accelerometer for motion artifact removal; a wireless communication interface; and a machine learning inference engine executing on a low-power microcontroller, wherein the inference engine is configured to classify cardiac rhythm patterns and generate health alerts."
+    },
+    {
+      "claim_number": 2,
+      "text": "The device of claim 1, further comprising a temperature sensor array with at least three sensing elements distributed across the flexible substrate for measuring skin temperature gradients indicative of peripheral circulation status."
+    },
+    {
+      "claim_number": 3,
+      "text": "A method for predicting cardiovascular events comprising: continuously sampling photoplethysmography signals at a frequency of at least 100 Hz; extracting heart rate variability features from the sampled signals; applying a trained recurrent neural network to the extracted features; and generating a risk score indicating probability of an adverse cardiac event within a 48-hour window."
+    }
+  ],
+  "detailed_description": "The wearable health monitoring device described herein represents a significant advancement over existing consumer health trackers by incorporating clinical-grade sensing accuracy in a form factor suitable for continuous wear. The device's machine learning models were trained on anonymized data from over 500,000 subjects, enabling reliable detection of atrial fibrillation, sleep apnea indicators, and stress response patterns. The photoplethysmography sensor uses a multi-wavelength approach with green and infrared LEDs to compensate for motion artifacts and varying skin tones. Battery life is optimized through adaptive sampling rates that increase during detected anomalies and reduce during periods of low activity."
+}

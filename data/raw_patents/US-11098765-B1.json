@@ -1,0 +1,22 @@
+{
+  "patent_id": "US-11098765-B1",
+  "title": "Federated Machine Learning System with Differential Privacy Guarantees",
+  "inventor": "Aisha Patel",
+  "grant_date": "2024-05-22",
+  "abstract": "A federated learning framework enabling multiple participants to collaboratively train machine learning models without sharing raw training data. The system incorporates differential privacy mechanisms, secure multi-party computation protocols, and Byzantine-fault-tolerant aggregation algorithms to provide strong privacy guarantees while maintaining model utility comparable to centralized training approaches.",
+  "claims": [
+    {
+      "claim_number": 1,
+      "text": "A computer-implemented federated learning system comprising: a central aggregation server configured to coordinate training rounds among a plurality of client devices; client-side training modules executing local model updates on private data; a differential privacy mechanism adding calibrated Gaussian noise to local gradients before transmission; a secure aggregation protocol encrypting gradient updates during transmission; and a Byzantine-fault-tolerant aggregation algorithm that identifies and excludes anomalous client updates."
+    },
+    {
+      "claim_number": 2,
+      "text": "The system of claim 1, wherein the differential privacy mechanism provides epsilon-delta privacy guarantees with epsilon less than or equal to 1.0 and delta less than or equal to 10 to the negative 5 power, computed using the Renyi differential privacy accounting method."
+    },
+    {
+      "claim_number": 3,
+      "text": "A method for privacy-preserving collaborative model training comprising: initializing a global model at a central server; distributing the global model to selected client devices; performing local stochastic gradient descent on each client's private dataset for a predetermined number of epochs; applying local differential privacy by clipping gradients to a maximum norm and adding Gaussian noise; transmitting the privatized gradient updates to the central server; and aggregating received updates using a weighted federated averaging algorithm."
+    }
+  ],
+  "detailed_description": "Federated learning has emerged as a promising paradigm for training machine learning models on distributed private data, with applications in healthcare, finance, and mobile computing. However, existing federated learning implementations provide insufficient privacy guarantees, as model updates can leak sensitive information about training data through gradient inversion attacks. The present invention combines state-of-the-art differential privacy techniques with secure aggregation protocols to provide provable privacy guarantees. The Byzantine-fault-tolerant aggregation component addresses the practical concern of malicious or malfunctioning clients attempting to corrupt the global model. Experimental results demonstrate that the system achieves model accuracy within 2% of centralized training baselines while maintaining the specified differential privacy guarantees across networks of 100 to 10,000 client devices."
+}
