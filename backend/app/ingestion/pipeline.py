@@ -100,12 +100,31 @@ def load_patent_pdf(path: str | Path) -> list[Document]:
 def parse_user_document(text: str) -> list[dict]:
     """
     Split a user's draft specification into paragraphs, assigning each a
-    stable paragraph_id.  Returns a list of {paragraph_id, text} dicts.
+    stable paragraph_id. Filters out diagram/metadata pages.
+    Returns a list of {paragraph_id, text} dicts.
     """
     raw_paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
+
+    filtered = []
+    for para in raw_paragraphs:
+        # Skip if too short (likely metadata/diagram labels)
+        if len(para) < 300:
+            continue
+
+        # Skip if mostly special characters (diagram metadata)
+        alpha_chars = sum(1 for c in para if c.isalpha())
+        if alpha_chars / len(para) < 0.4:
+            continue
+
+        # Skip if fewer than 3 sentences (mostly noise/diagrams)
+        if para.count('.') < 3:
+            continue
+
+        filtered.append(para)
+
     return [
         {"paragraph_id": str(uuid.uuid4()), "text": para}
-        for para in raw_paragraphs
+        for para in filtered
     ]
 
 
