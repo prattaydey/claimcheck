@@ -1,4 +1,5 @@
 import json
+import re
 from typing import Optional
 
 import google.genai as genai
@@ -73,6 +74,12 @@ def generate_report(user_text: str, prior_art_hits: list[dict]) -> dict:
     )
 
     raw = response.text or "{}"
+
+    # Extract JSON from markdown code blocks if present
+    match = re.search(r'```(?:json)?\s*\n?(.*?)\n?```', raw, re.DOTALL)
+    if match:
+        raw = match.group(1)
+
     try:
         return json.loads(raw)
     except json.JSONDecodeError:

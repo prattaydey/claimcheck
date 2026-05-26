@@ -288,7 +288,7 @@ function renderReport(report) {
     <!-- Summary -->
     ${report.summary ? `
     <div class="bg-gray-800 rounded-lg p-4">
-      <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2">Executive Summary</h3>
+      <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2">Summary</h3>
       <p class="text-sm text-gray-300 leading-relaxed">${escapeHtml(report.summary)}</p>
     </div>` : ''}
 
