@@ -1,0 +1,146 @@
+/* ── Scrollbar styling ─────────────────────────────────────────────── */
+::-webkit-scrollbar            { width: 6px; height: 6px; }
+::-webkit-scrollbar-track      { background: transparent; }
+::-webkit-scrollbar-thumb      { background: #374151; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover{ background: #4b5563; }
+
+/* ── Paragraph blocks ──────────────────────────────────────────────── */
+.para-block {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  background: #1f2937;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: #d1d5db;
+  position: relative;
+}
+.para-block:hover {
+  background: #273347;
+  border-color: #4f46e5;
+}
+.para-block.active {
+  background: #2d2a00;
+  border-color: #ca8a04;
+  box-shadow: 0 0 0 2px rgba(202,138,4,0.2);
+  color: #fef9c3;
+}
+.para-block .para-num {
+  font-size: 0.65rem;
+  color: #6b7280;
+  margin-bottom: 4px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ── Patent cards ──────────────────────────────────────────────────── */
+.patent-card {
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 10px;
+  padding: 12px 14px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.patent-card.highlight {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.25);
+}
+.patent-card .card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.patent-card .card-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #e5e7eb;
+  line-height: 1.4;
+}
+.score-badge {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+.score-badge.high  { background: #450a0a; color: #fca5a5; }
+.score-badge.mid   { background: #431407; color: #fdba74; }
+.score-badge.low   { background: #052e16; color: #86efac; }
+
+.patent-card .card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.meta-chip {
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #374151;
+  color: #9ca3af;
+}
+.patent-card .card-text {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  line-height: 1.55;
+}
+.card-text .highlight-match {
+  background: rgba(99,102,241,0.25);
+  color: #c7d2fe;
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+/* ── Filter buttons ────────────────────────────────────────────────── */
+.filter-btn.active {
+  background: #4338ca;
+  border-color: #6366f1;
+  color: #e0e7ff;
+}
+
+/* ── Risk gauge ────────────────────────────────────────────────────── */
+#risk-gauge-svg {
+  display: block;
+  margin: 0 auto;
+}
+
+/* ── Conflict cards ────────────────────────────────────────────────── */
+.conflict-card {
+  background: #1f2937;
+  border-left: 3px solid #6366f1;
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+.conflict-card.severity-High   { border-left-color: #ef4444; }
+.conflict-card.severity-Medium { border-left-color: #f97316; }
+.conflict-card.severity-Low    { border-left-color: #22c55e; }
+
+/* ── Report skeleton loader ────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, #1f2937 25%, #273347 50%, #1f2937 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 6px;
+  height: 14px;
+}
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Loading overlay on para-block ────────────────────────────────── */
+.para-block.loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(99,102,241,0.08);
+  animation: pulse 1s ease-in-out infinite alternate;
+}
+@keyframes pulse { from { opacity: 0.4; } to { opacity: 1; } }
