@@ -187,15 +187,17 @@ async function onParagraphClick(para, el, isFilterRefresh = false) {
     state.priorArtResults = results;
 
     // Accumulate unique hits for the report
-    results.forEach(hit => {
-      const key = `${hit.patent_id}-${hit.text.slice(0, 40)}`;
-      if (!state.allPriorArtHits.find(h => `${h.patent_id}-${h.text.slice(0, 40)}` === key)) {
-        state.allPriorArtHits.push(hit);
-      }
-    });
+    if (results && results.length > 0) {
+      results.forEach(hit => {
+        const key = `${hit.patent_id}-${hit.text.slice(0, 40)}`;
+        if (!state.allPriorArtHits.find(h => `${h.patent_id}-${h.text.slice(0, 40)}` === key)) {
+          state.allPriorArtHits.push(hit);
+        }
+      });
+    }
 
-    renderPriorArt(data.results, para.text);
-    done(`${data.results.length} matches found`);
+    renderPriorArt(results, para.text);
+    done(`${results ? results.length : 0} matches found`);
   } catch (ex) {
     err('Search failed');
     console.error(ex);
@@ -209,7 +211,7 @@ async function onParagraphClick(para, el, isFilterRefresh = false) {
 function renderPriorArt(results, queryText) {
   midContent.innerHTML = '';
 
-  if (!results.length) {
+  if (!results || !results.length) {
     showColumn(midEmpty, midContent, false);
     midEmpty.querySelector('p').textContent = 'No matches found for this paragraph.';
     return;
