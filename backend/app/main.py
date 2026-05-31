@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from app.database import get_vector_store, reset_vector_store
 from app.ingestion.pipeline import ingest_all_patents, parse_user_document
 from app.services.analytical import generate_report
-from app.services.rag_service import query_prior_art
+from app.services.rag_service import query_prior_art, query_prior_art_batch
 
 
 # Lifespan: seed ChromaDB on startup if collection is empty
@@ -60,6 +60,16 @@ class GenerateReportRequest(BaseModel):
     prior_art_hits: list[dict]
 
 
+class BatchPriorArtRequest(BaseModel):
+    texts: list[str]
+    section_filter: str | None = None
+
+
+class BatchPriorArtResponse(BaseModel):
+    results: list[list[dict]]
+    query_texts: list[str]
+
+
 # Routes
 @app.get("/api/health")
 async def health():
@@ -106,6 +116,19 @@ async def query_prior_art_endpoint(body: PriorArtRequest):
 
     results = query_prior_art(body.text, section_filter=body.section_filter)
     return PriorArtResponse(results=results, query_text=body.text)
+
+
+@app.post("/api/query-prior-art-batch", response_model=BatchPriorArtResponse)
+async def query_prior_art_batch_endpoint(body: BatchPriorArtRequest):
+    """Batch semantic search for multiple texts (parallel)."""
+    if not body.texts:
+        raise HTTPException(status_code=422, detail="'texts' must not be empty.")
+
+    if any(not text.strip() for text in body.texts):
+        raise HTTPException(status_code=422, detail="All texts must not be empty.")
+
+    results = query_prior_art_batch(body.texts, section_filter=body.section_filter)
+    return BatchPriorArtResponse(results=results, query_texts=body.texts)
 
 
 @app.post("/api/generate-report")
