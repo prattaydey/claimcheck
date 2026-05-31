@@ -17,6 +17,12 @@ def _get_client() -> genai.Client:
 
 REPORT_SCHEMA = {
     "overall_risk_score": "integer 1-100",
+    "risk_breakdown": {
+        "claims_overlap": "integer 0-100 — direct claim infringement likelihood",
+        "design_freedom": "integer 0-100 — room to design around patents",
+        "invalidation_risk": "integer 0-100 — likelihood prior art invalidates your patent",
+        "license_cost": "integer 0-100 — licensing implications (high = expensive)",
+    },
     "critical_conflicts": [
         {
             "patent_id": "string",
@@ -28,6 +34,13 @@ REPORT_SCHEMA = {
         }
     ],
     "design_workaround_suggestions": ["string"],
+    "action_items": [
+        {
+            "priority": "CRITICAL | HIGH | MEDIUM",
+            "action": "string — what to change or do",
+            "reason": "string — why this matters",
+        }
+    ],
     "summary": "string — 2-3 sentence executive summary",
 }
 
@@ -43,6 +56,13 @@ Scoring guidance for overall_risk_score:
 - 61-85: High risk — significant claim overlaps requiring design changes
 - 86-100: Critical risk — near-identical claims found; strong infringement likelihood
 
+Risk breakdown guidance:
+- claims_overlap: How much of your claims directly overlap with prior art (0=none, 100=identical)
+- design_freedom: How much you can redesign to avoid infringement (100=completely redesignable, 0=core idea patented)
+- invalidation_risk: Could this prior art invalidate YOUR patent? (0=weak prior art, 100=exact prior art)
+- license_cost: Estimated licensing cost if you use this prior art (0=free/unrestricted, 100=very expensive)
+
+Action items should be prioritized and specific. Focus on what to change, not just risks.
 Be precise, cite specific claim language, and make workaround suggestions actionable."""
 
 

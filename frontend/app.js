@@ -285,6 +285,18 @@ function renderReport(report) {
       <div class="text-xs text-gray-500">Infringement Risk Score</div>
     </div>
 
+    <!-- Risk Breakdown -->
+    ${(report.risk_breakdown) ? `
+    <div class="bg-gray-800 rounded-lg p-4">
+      <h3 class="text-xs font-semibold text-gray-400 uppercase mb-3">Risk Breakdown</h3>
+      <div class="space-y-2">
+        ${buildRiskBar('Claims Overlap', report.risk_breakdown.claims_overlap)}
+        ${buildRiskBar('Design Freedom', report.risk_breakdown.design_freedom)}
+        ${buildRiskBar('Invalidation Risk', report.risk_breakdown.invalidation_risk)}
+        ${buildRiskBar('License Cost', report.risk_breakdown.license_cost)}
+      </div>
+    </div>` : ''}
+
     <!-- Summary -->
     ${report.summary ? `
     <div class="bg-gray-800 rounded-lg p-4">
@@ -313,6 +325,22 @@ function renderReport(report) {
       </div>
     </div>` : ''}
 
+    <!-- Action Items -->
+    ${(report.action_items?.length) ? `
+    <div>
+      <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2">Action Items</h3>
+      <ul class="space-y-2">
+        ${report.action_items.map((item, i) => `
+          <li class="flex gap-2 text-sm">
+            <span class="flex-none px-2 py-0.5 rounded text-xs font-bold ${item.priority === 'CRITICAL' ? 'bg-red-900 text-red-300' : item.priority === 'HIGH' ? 'bg-orange-900 text-orange-300' : 'bg-gray-700 text-gray-300'}">${item.priority}</span>
+            <div>
+              <p class="text-gray-200 font-medium">${escapeHtml(item.action)}</p>
+              <p class="text-xs text-gray-400">${escapeHtml(item.reason)}</p>
+            </div>
+          </li>`).join('')}
+      </ul>
+    </div>` : ''}
+
     <!-- Workarounds -->
     ${(report.design_workaround_suggestions?.length) ? `
     <div>
@@ -325,6 +353,20 @@ function renderReport(report) {
           </li>`).join('')}
       </ul>
     </div>` : ''}`;
+}
+
+// ── Risk breakdown bar ────────────────────────────────────
+function buildRiskBar(label, score) {
+  const pct = Math.min(100, Math.max(0, score || 0));
+  const color = pct >= 70 ? '#ef4444' : pct >= 40 ? '#f97316' : '#22c55e';
+  return `
+    <div class="flex items-center gap-2">
+      <div class="w-24 text-xs text-gray-400">${escapeHtml(label)}</div>
+      <div class="flex-1 bg-gray-700 rounded-full h-2 overflow-hidden">
+        <div class="h-full" style="width:${pct}%; background-color:${color}; transition:width 0.3s"></div>
+      </div>
+      <div class="w-8 text-xs text-right text-gray-300 font-bold">${pct}%</div>
+    </div>`;
 }
 
 // ── SVG circular gauge ─────────────────────────────────────
