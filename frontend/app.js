@@ -307,6 +307,34 @@ btnReport.addEventListener('click', async () => {
   }
 
   try {
+    // Analyze cross-paragraph patterns if we have prior art
+    let synthesis = null;
+    if (hits.length > 0) {
+      try {
+        // Build prior_art_by_paragraph map (distribute hits across paragraphs)
+        const priorArtByParagraph = {};
+        state.paragraphs.forEach(p => priorArtByParagraph[p.paragraph_id] = []);
+        hits.forEach((hit, idx) => {
+          const paraId = state.paragraphs[idx % state.paragraphs.length].paragraph_id;
+          priorArtByParagraph[paraId].push(hit);
+        });
+
+        const analysisRes = await fetch(`${API}/analyze-patterns`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paragraphs: state.paragraphs,
+            prior_art_by_paragraph: priorArtByParagraph,
+          }),
+        });
+        if (analysisRes.ok) {
+          synthesis = await analysisRes.json();
+        }
+      } catch (e) {
+        console.warn('Pattern analysis failed:', e);
+      }
+    }
+
     const res = await fetch(`${API}/generate-report`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -314,6 +342,7 @@ btnReport.addEventListener('click', async () => {
     });
     if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
     const report = await res.json();
+    report.synthesis = synthesis;  // Attach synthesis analysis to report
     console.log('Report received:', report);
     renderReport(report);
     done('Report ready');
@@ -355,6 +384,41 @@ function renderReport(report) {
     <div class="bg-gray-800 rounded-lg p-4">
       <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2">Summary</h3>
       <p class="text-sm text-gray-300 leading-relaxed">${escapeHtml(report.summary)}</p>
+    </div>` : ''}
+
+    <!-- Synthesis Analysis -->
+    ${(report.synthesis) ? `
+    <div class="bg-gray-900 rounded-lg p-4 border-l-4 border-blue-600">
+      <h3 class="text-xs font-semibold text-blue-400 uppercase mb-3">📊 Pattern Analysis</h3>
+
+      ${report.synthesis.narrative_summary ? `
+      <div class="mb-4 pb-3 border-b border-gray-700">
+        <p class="text-sm text-gray-300 italic">${escapeHtml(report.synthesis.narrative_summary)}</p>
+      </div>` : ''}
+
+      ${(report.synthesis.conflict_clusters?.length) ? `
+      <div class="mb-4">
+        <h4 class="text-xs font-semibold text-gray-400 mb-2">Strongest Conflicts</h4>
+        ${report.synthesis.conflict_clusters.slice(0, 3).map(c => `
+          <div class="text-xs text-gray-300 mb-2 p-2 bg-gray-800 rounded">
+            <div class="font-medium text-gray-100">${escapeHtml(c.patent_id)}</div>
+            <div class="text-gray-400">${escapeHtml(c.patent_title || '')}</div>
+            <div class="text-gray-500 text-xs">Matched ${c.frequency || 0} paragraph${c.frequency !== 1 ? 's' : ''} • Avg similarity: ${((c.average_similarity || 0) * 100).toFixed(0)}%</div>
+          </div>`).join('')}
+      </div>` : ''}
+
+      ${(report.synthesis.core_exposures?.length) ? `
+      <div>
+        <h4 class="text-xs font-semibold text-gray-400 mb-2">Core Exposures</h4>
+        ${report.synthesis.core_exposures.map(e => `
+          <div class="text-xs text-gray-300 mb-2 p-2 bg-gray-800 rounded">
+            <div class="flex items-start justify-between">
+              <div class="font-medium text-gray-100">${e.rank}. ${escapeHtml(e.exposure || '')}</div>
+              <span class="text-xs px-2 py-0.5 rounded-full ${e.severity === 'Critical' ? 'bg-red-900 text-red-200' : e.severity === 'High' ? 'bg-orange-900 text-orange-200' : 'bg-yellow-900 text-yellow-200'}">${e.severity}</span>
+            </div>
+            <div class="text-gray-500 mt-1">${e.redesign_feasible ? '✓ Redesignable' : '✗ Hard to redesign'}: ${escapeHtml(e.rationale || '')}</div>
+          </div>`).join('')}
+      </div>` : ''}
     </div>` : ''}
 
     <!-- Critical Conflicts -->

@@ -4,6 +4,7 @@ from typing import Optional
 
 import google.genai as genai
 from app.config import settings
+from app.services.synthesis import analyze_patterns, build_narrative
 
 _client: Optional[genai.Client] = None
 

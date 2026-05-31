@@ -12,6 +12,7 @@ from app.ingestion.pipeline import ingest_all_patents, parse_user_document
 from app.ingestion.extractor import classify_document
 from app.services.analytical import generate_report
 from app.services.rag_service import query_prior_art, query_prior_art_batch, query_prior_art_by_domains
+from app.services.synthesis import analyze_patterns, suggest_workarounds
 
 
 # Lifespan: seed ChromaDB on startup if collection is empty
@@ -86,6 +87,30 @@ class DomainAwarePriorArtResponse(BaseModel):
     all_results: list[dict]
     domains_searched: list[str]
     query_text: str
+
+
+class SynthesisAnalysisRequest(BaseModel):
+    paragraphs: list[dict]  # [{paragraph_id, text}]
+    prior_art_by_paragraph: dict  # {paragraph_id: [prior art results]}
+
+
+class SynthesisAnalysisResponse(BaseModel):
+    cross_paragraph_themes: list[dict]
+    conflict_clusters: list[dict]
+    core_exposures: list[dict]
+    narrative_summary: str
+
+
+class WorkaroundRequest(BaseModel):
+    exposure: str
+    patent_claims: list[str]
+
+
+class WorkaroundResponse(BaseModel):
+    exposure_summary: str
+    redesign_scope: str
+    workarounds: list[dict]
+    recommended_path: str
 
 
 # Routes
@@ -179,6 +204,42 @@ async def generate_report_endpoint(body: GenerateReportRequest):
 
     report = generate_report(body.user_text, body.prior_art_hits)
     return JSONResponse(content=report)
+
+
+@app.post("/api/analyze-patterns", response_model=SynthesisAnalysisResponse)
+async def analyze_patterns_endpoint(body: SynthesisAnalysisRequest):
+    """Analyze cross-paragraph patterns and conflict clusters."""
+    if not body.paragraphs:
+        raise HTTPException(status_code=422, detail="'paragraphs' must not be empty.")
+
+    if not body.prior_art_by_paragraph:
+        raise HTTPException(status_code=422, detail="'prior_art_by_paragraph' must not be empty.")
+
+    result = analyze_patterns(body.paragraphs, body.prior_art_by_paragraph)
+    return SynthesisAnalysisResponse(
+        cross_paragraph_themes=result.get("cross_paragraph_themes", []),
+        conflict_clusters=result.get("conflict_clusters", []),
+        core_exposures=result.get("core_exposures", []),
+        narrative_summary=result.get("narrative_summary", ""),
+    )
+
+
+@app.post("/api/suggest-workarounds", response_model=WorkaroundResponse)
+async def suggest_workarounds_endpoint(body: WorkaroundRequest):
+    """Generate workaround suggestions for a specific exposure."""
+    if not body.exposure.strip():
+        raise HTTPException(status_code=422, detail="'exposure' must not be empty.")
+
+    if not body.patent_claims:
+        raise HTTPException(status_code=422, detail="'patent_claims' must not be empty.")
+
+    result = suggest_workarounds(body.exposure, body.patent_claims)
+    return WorkaroundResponse(
+        exposure_summary=result.get("exposure_summary", ""),
+        redesign_scope=result.get("redesign_scope", ""),
+        workarounds=result.get("workarounds", []),
+        recommended_path=result.get("recommended_path", ""),
+    )
 
 
 @app.post("/api/ingest")
