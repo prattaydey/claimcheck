@@ -8,6 +8,7 @@ from langchain_core.documents import Document
 from pypdf import PdfReader
 
 from app.config import settings
+from app.ingestion.extractor import classify_document
 
 
 def _make_splitter() -> RecursiveCharacterTextSplitter:
@@ -20,18 +21,24 @@ def _make_splitter() -> RecursiveCharacterTextSplitter:
 
 
 # JSON patent ingestion: splits into 3 sections (Abstract, Claims, Detailed Description)
-# attaches metadata (patent_id, title, inventor, grant_date, section, claim_number)
+# attaches metadata (patent_id, title, inventor, grant_date, section, claim_number, domain)
 def load_patent_json(path: str | Path) -> list[Document]:
     """Parse a structured patent JSON file into LangChain Documents."""
     data: dict[str, Any] = json.loads(Path(path).read_text(encoding="utf-8"))
     splitter = _make_splitter()
     docs: list[Document] = []
 
+    # Classify patent to determine domain
+    patent_text = f"{data.get('title', '')} {data.get('abstract', '')} {data.get('detailed_description', '')}"
+    classification = classify_document(patent_text)
+    patent_domain = classification.get("primary_domain", "unknown")
+
     base_meta = {
         "patent_id": data.get("patent_id", ""),
         "title": data.get("title", ""),
         "inventor": data.get("inventor", ""),
         "grant_date": data.get("grant_date", ""),
+        "domain": patent_domain,
     }
 
     # Abstract
@@ -69,7 +76,7 @@ def load_patent_json(path: str | Path) -> list[Document]:
 
 
 # PDF patent ingestion: stays under one section (Full Text)
-# attaches same metadata (patent_id, title, inventor, grant_date, section, claim_number)
+# attaches same metadata (patent_id, title, inventor, grant_date, section, claim_number, domain)
 def load_patent_pdf(path: str | Path) -> list[Document]:
     """Extract text from a patent PDF and chunk it."""
     reader = PdfReader(str(path))
@@ -78,6 +85,11 @@ def load_patent_pdf(path: str | Path) -> list[Document]:
     ).strip()
 
     stem = Path(path).stem
+
+    # Classify PDF to determine domain
+    classification = classify_document(full_text)
+    patent_domain = classification.get("primary_domain", "unknown")
+
     splitter = _make_splitter()
     return [
         Document(
@@ -89,6 +101,7 @@ def load_patent_pdf(path: str | Path) -> list[Document]:
                 "grant_date": "",
                 "section": "Full Text",
                 "claim_number": 0,
+                "domain": patent_domain,
             },
         )
         for chunk in splitter.split_text(full_text)

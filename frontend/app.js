@@ -156,21 +156,38 @@ async function onParagraphClick(para, el, isFilterRefresh = false) {
   loading('Searching prior art…');
 
   try {
-    const res = await fetch(`${API}/query-prior-art`, {
+    // Use domain-aware search if classification is available
+    let endpoint = `${API}/query-prior-art`;
+    let requestBody = {
+      text: para.text,
+      paragraph_id: para.paragraph_id,
+      section_filter: state.sectionFilter || null,
+    };
+
+    if (state.classification) {
+      endpoint = `${API}/query-prior-art-domains`;
+      requestBody = {
+        text: para.text,
+        primary_domain: state.classification.primary_domain,
+        secondary_domains: state.classification.secondary_domains || [],
+        section_filter: state.sectionFilter || null,
+      };
+    }
+
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text: para.text,
-        paragraph_id: para.paragraph_id,
-        section_filter: state.sectionFilter || null,
-      }),
+      body: JSON.stringify(requestBody),
     });
     if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
     const data = await res.json();
-    state.priorArtResults = data.results;
+
+    // Handle both regular and domain-aware responses
+    const results = data.all_results || data.results;
+    state.priorArtResults = results;
 
     // Accumulate unique hits for the report
-    data.results.forEach(hit => {
+    results.forEach(hit => {
       const key = `${hit.patent_id}-${hit.text.slice(0, 40)}`;
       if (!state.allPriorArtHits.find(h => `${h.patent_id}-${h.text.slice(0, 40)}` === key)) {
         state.allPriorArtHits.push(hit);

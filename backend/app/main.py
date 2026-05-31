@@ -11,7 +11,7 @@ from app.database import get_vector_store, reset_vector_store
 from app.ingestion.pipeline import ingest_all_patents, parse_user_document
 from app.ingestion.extractor import classify_document
 from app.services.analytical import generate_report
-from app.services.rag_service import query_prior_art, query_prior_art_batch
+from app.services.rag_service import query_prior_art, query_prior_art_batch, query_prior_art_by_domains
 
 
 # Lifespan: seed ChromaDB on startup if collection is empty
@@ -50,6 +50,7 @@ class PriorArtRequest(BaseModel):
     text: str
     paragraph_id: str | None = None
     section_filter: str | None = None  # "Claims", "Abstract", "Detailed Description"
+    domain_filter: str | None = None  # "software", "hardware", "biotech", etc.
 
 
 class PriorArtResponse(BaseModel):
@@ -70,6 +71,21 @@ class BatchPriorArtRequest(BaseModel):
 class BatchPriorArtResponse(BaseModel):
     results: list[list[dict]]
     query_texts: list[str]
+
+
+class DomainAwarePriorArtRequest(BaseModel):
+    text: str
+    primary_domain: str
+    secondary_domains: list[str] | None = None
+    section_filter: str | None = None
+
+
+class DomainAwarePriorArtResponse(BaseModel):
+    primary_domain_results: list[dict]
+    secondary_domain_results: dict
+    all_results: list[dict]
+    domains_searched: list[str]
+    query_text: str
 
 
 # Routes
@@ -117,7 +133,7 @@ async def query_prior_art_endpoint(body: PriorArtRequest):
     if not body.text.strip():
         raise HTTPException(status_code=422, detail="'text' must not be empty.")
 
-    results = query_prior_art(body.text, section_filter=body.section_filter)
+    results = query_prior_art(body.text, section_filter=body.section_filter, domain_filter=body.domain_filter)
     return PriorArtResponse(results=results, query_text=body.text)
 
 
@@ -132,6 +148,27 @@ async def query_prior_art_batch_endpoint(body: BatchPriorArtRequest):
 
     results = query_prior_art_batch(body.texts, section_filter=body.section_filter)
     return BatchPriorArtResponse(results=results, query_texts=body.texts)
+
+
+@app.post("/api/query-prior-art-domains", response_model=DomainAwarePriorArtResponse)
+async def query_prior_art_domains_endpoint(body: DomainAwarePriorArtRequest):
+    """Domain-aware prior art search using document classification."""
+    if not body.text.strip():
+        raise HTTPException(status_code=422, detail="'text' must not be empty.")
+
+    results = query_prior_art_by_domains(
+        body.text,
+        primary_domain=body.primary_domain,
+        secondary_domains=body.secondary_domains,
+        section_filter=body.section_filter,
+    )
+    return DomainAwarePriorArtResponse(
+        primary_domain_results=results["primary_domain_results"],
+        secondary_domain_results=results["secondary_domain_results"],
+        all_results=results["all_results"],
+        domains_searched=results["domains_searched"],
+        query_text=body.text,
+    )
 
 
 @app.post("/api/generate-report")
