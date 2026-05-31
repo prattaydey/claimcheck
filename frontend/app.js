@@ -11,6 +11,7 @@ const state = {
   priorArtResults: [],     // latest results from /query-prior-art
   allPriorArtHits: [],     // accumulated for report generation
   sectionFilter: '',
+  classification: null,    // {primary_domain, confidence, secondary_domains, key_terms, technical_summary}
   reportGenerated: false, // dead state with no effect for now
 };
 
@@ -63,9 +64,11 @@ fileInput.addEventListener('change', async e => {
     if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
     const data = await res.json();
     state.paragraphs = data.paragraphs;
+    state.classification = data.classification;
     state.activeParagraphId = null;
     state.allPriorArtHits = [];
     renderParagraphs();
+    renderClassification();
     done(`${data.total_paragraphs} paragraphs loaded`);
     btnReport.disabled = false;
     // Reset right column
@@ -81,6 +84,33 @@ fileInput.addEventListener('change', async e => {
 // ── Render left column ─────────────────────────────────────
 function renderParagraphs() {
   leftContent.innerHTML = '';
+
+  // Add classification summary at top if available
+  if (state.classification) {
+    const classDiv = document.createElement('div');
+    classDiv.className = 'classification-summary';
+    classDiv.innerHTML = `
+      <div class="classification-header">📊 Document Classification</div>
+      <div class="classification-body">
+        <div><strong>Domain:</strong> ${escapeHtml(state.classification.primary_domain)}</div>
+        <div><strong>Confidence:</strong> ${(state.classification.confidence * 100).toFixed(0)}%</div>
+        ${state.classification.secondary_domains && state.classification.secondary_domains.length > 0 ? `
+          <div><strong>Related:</strong> ${escapeHtml(state.classification.secondary_domains.join(', '))}</div>
+        ` : ''}
+        <div style="margin-top: 8px; font-size: 0.9em; color: #666;">${escapeHtml(state.classification.technical_summary)}</div>
+        ${state.classification.key_terms && state.classification.key_terms.length > 0 ? `
+          <div style="margin-top: 8px;">
+            <strong>Key Terms:</strong>
+            <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">
+              ${state.classification.key_terms.map(term => `<span class="key-term-badge">${escapeHtml(term)}</span>`).join('')}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+    leftContent.appendChild(classDiv);
+  }
+
   state.paragraphs.forEach((para, idx) => {
     const div = document.createElement('div');
     div.className = 'para-block';
@@ -93,6 +123,12 @@ function renderParagraphs() {
   });
   paraCount.textContent = `${state.paragraphs.length} paragraph${state.paragraphs.length !== 1 ? 's' : ''}`;
   showColumn(leftEmpty, leftContent, true);
+}
+
+// ── Render classification (for initial display) ─────────────────────────────────────
+function renderClassification() {
+  // Classification is now integrated into renderParagraphs
+  // This function is here for consistency and future expansion
 }
 
 // ── Paragraph click ────────────────────────────────────────

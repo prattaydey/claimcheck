@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from app.database import get_vector_store, reset_vector_store
 from app.ingestion.pipeline import ingest_all_patents, parse_user_document
+from app.ingestion.extractor import classify_document
 from app.services.analytical import generate_report
 from app.services.rag_service import query_prior_art, query_prior_art_batch
 
@@ -42,6 +43,7 @@ app.add_middleware(
 class AnalyzeDocumentResponse(BaseModel):
     paragraphs: list[dict]  # [{paragraph_id, text}]
     total_paragraphs: int
+    classification: dict  # {primary_domain, confidence, secondary_domains, key_terms, technical_summary}
 
 
 class PriorArtRequest(BaseModel):
@@ -84,7 +86,7 @@ async def analyze_document(
 ):
     """
     Accept a plain-text/markdown body OR a file upload.
-    Returns the document split into paragraphs with stable IDs.
+    Returns the document split into paragraphs with stable IDs and domain classification.
     """
     content = ""
 
@@ -105,7 +107,8 @@ async def analyze_document(
         raise HTTPException(status_code=422, detail="Document appears to be empty.")
 
     paragraphs = parse_user_document(content)
-    return AnalyzeDocumentResponse(paragraphs=paragraphs, total_paragraphs=len(paragraphs))
+    classification = classify_document(content)
+    return AnalyzeDocumentResponse(paragraphs=paragraphs, total_paragraphs=len(paragraphs), classification=classification)
 
 
 @app.post("/api/query-prior-art", response_model=PriorArtResponse)

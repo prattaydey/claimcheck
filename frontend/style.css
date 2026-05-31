@@ -144,3 +144,38 @@
   animation: pulse 1s ease-in-out infinite alternate;
 }
 @keyframes pulse { from { opacity: 0.4; } to { opacity: 1; } }
+
+/* ── Classification summary ────────────────────────────────────── */
+.classification-summary {
+  background: linear-gradient(135deg, #1f3a5f 0%, #1f2937 100%);
+  border: 1px solid #374151;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-left: 4px solid #3b82f6;
+}
+.classification-header {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #60a5fa;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+.classification-body {
+  font-size: 0.75rem;
+  color: #d1d5db;
+  line-height: 1.6;
+}
+.classification-body div {
+  margin-bottom: 4px;
+}
+.key-term-badge {
+  display: inline-block;
+  background: #374151;
+  color: #93c5fd;
+  padding: 2px 7px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  border: 1px solid #4b5563;
+}
