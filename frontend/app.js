@@ -30,6 +30,9 @@ const searchSpinner = $('search-spinner');
 const btnReport    = $('btn-report');
 const fileInput    = $('file-upload');
 
+// Store last generated report for export
+let lastReport = null;
+
 // ── Status helpers ─────────────────────────────────────────
 function setStatus(label, color) {
   statusText.textContent = label;
@@ -309,18 +312,19 @@ btnReport.addEventListener('click', async () => {
   }
 
   try {
+    // Build prior_art_by_paragraph map (distribute hits across paragraphs)
+    const priorArtByParagraph = {};
+    state.paragraphs.forEach(p => priorArtByParagraph[p.paragraph_id] = []);
+    hits.forEach((hit, idx) => {
+      const paraId = state.paragraphs[idx % state.paragraphs.length].paragraph_id;
+      priorArtByParagraph[paraId].push(hit);
+    });
+
     // Analyze cross-paragraph patterns if we have prior art
     let synthesis = null;
+    let paragraphAnalyses = null;
     if (hits.length > 0) {
       try {
-        // Build prior_art_by_paragraph map (distribute hits across paragraphs)
-        const priorArtByParagraph = {};
-        state.paragraphs.forEach(p => priorArtByParagraph[p.paragraph_id] = []);
-        hits.forEach((hit, idx) => {
-          const paraId = state.paragraphs[idx % state.paragraphs.length].paragraph_id;
-          priorArtByParagraph[paraId].push(hit);
-        });
-
         const analysisRes = await fetch(`${API}/analyze-patterns`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -335,6 +339,24 @@ btnReport.addEventListener('click', async () => {
       } catch (e) {
         console.warn('Pattern analysis failed:', e);
       }
+
+      // Analyze individual paragraphs
+      try {
+        const paraRes = await fetch(`${API}/analyze-paragraphs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paragraphs: state.paragraphs,
+            prior_art_by_paragraph: priorArtByParagraph,
+          }),
+        });
+        if (paraRes.ok) {
+          const paraData = await paraRes.json();
+          paragraphAnalyses = paraData.analyses;
+        }
+      } catch (e) {
+        console.warn('Paragraph analysis failed:', e);
+      }
     }
 
     const res = await fetch(`${API}/generate-report`, {
@@ -344,7 +366,8 @@ btnReport.addEventListener('click', async () => {
     });
     if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
     const report = await res.json();
-    report.synthesis = synthesis;  // Attach synthesis analysis to report
+    report.synthesis = synthesis;  // Attach synthesis analysis
+    report.paragraph_analyses = paragraphAnalyses;  // Attach paragraph analyses
     console.log('Report received:', report);
     renderReport(report);
     done('Report ready');
@@ -357,6 +380,7 @@ btnReport.addEventListener('click', async () => {
 
 // ── Render right column ────────────────────────────────────
 function renderReport(report) {
+  lastReport = report;  // Save for export
   const score = Math.min(100, Math.max(1, report.overall_risk_score ?? 50));
   const color = score >= 70 ? '#ef4444' : score >= 40 ? '#f97316' : '#22c55e';
   const label = score >= 70 ? 'High Risk' : score >= 40 ? 'Moderate Risk' : 'Low Risk';
@@ -471,7 +495,86 @@ function renderReport(report) {
             <span>${escapeHtml(s)}</span>
           </li>`).join('')}
       </ul>
-    </div>` : ''}`;
+    </div>` : ''}
+
+    <!-- Per-Paragraph Clause Breakdown -->
+    ${(report.paragraph_analyses?.length) ? `
+    <div class="bg-gray-900 rounded-lg p-4">
+      <h3 class="text-xs font-semibold text-purple-400 uppercase mb-3">📋 Per-Paragraph Analysis</h3>
+      <div class="space-y-3">
+        ${report.paragraph_analyses.slice(0, 5).map((para, idx) => `
+          <div class="bg-gray-800 rounded p-3 text-xs">
+            <div class="flex justify-between items-start mb-2">
+              <span class="font-semibold text-gray-200">Paragraph ${idx + 1}</span>
+              <span class="text-purple-300">Risk: ${para.risk_score || 0}/100</span>
+            </div>
+            ${para.technical_components?.length ? `
+            <div class="text-gray-400 mb-1">
+              <span class="text-gray-500">Components:</span> ${escapeHtml(para.technical_components.join(', '))}
+            </div>` : ''}
+            <div class="text-gray-400 mb-1">
+              <span class="text-gray-500">Overlap:</span> ${para.prior_art_exposure?.overlap_level || 'None'}
+            </div>
+            ${para.prior_art_exposure?.distinguishing_features?.length ? `
+            <div class="text-green-400 text-xs">
+              ✓ Differentiators: ${escapeHtml(para.prior_art_exposure.distinguishing_features.join(', '))}
+            </div>` : ''}
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- Export Button -->
+    <div class="flex gap-2 pt-4 border-t border-gray-700">
+      <button id="btn-export-report" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded transition">
+        📥 Export Report
+      </button>
+    </div>`;
+
+  // Set up export button handler
+  setTimeout(() => {
+    const exportBtn = document.getElementById('btn-export-report');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', async () => {
+        if (!lastReport) return;
+        try {
+          loading('Exporting report…');
+          const exportRes = await fetch(`${API}/export-report`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              invention_title: 'Patent Infringement Analysis',
+              classification: lastReport.classification || {},
+              overall_risk_score: lastReport.overall_risk_score || 0,
+              risk_breakdown: lastReport.risk_breakdown || {},
+              paragraph_analyses: lastReport.paragraph_analyses || [],
+              conflict_clusters: lastReport.conflict_clusters || [],
+              core_exposures: lastReport.core_exposures || [],
+              action_items: lastReport.action_items || [],
+              patent_timeline: lastReport.patent_timeline || {},
+            }),
+          });
+          if (!exportRes.ok) throw new Error('Export failed');
+          const data = await exportRes.json();
+
+          // Download as text file
+          const blob = new Blob([data.report], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `claimcheck_report_${new Date().toISOString().split('T')[0]}.txt`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+
+          done('Report exported');
+        } catch (ex) {
+          err('Export failed');
+          console.error(ex);
+        }
+      });
+    }
+  }, 100);
 }
 
 // ── Risk breakdown bar ────────────────────────────────────
