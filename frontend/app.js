@@ -289,7 +289,10 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 btnReport.addEventListener('click', async () => {
   if (!state.paragraphs.length) return;
 
-  loading('Generating AI report…');
+  const detailedAnalysis = document.getElementById('detailed-analysis-checkbox').checked;
+  const reportType = detailedAnalysis ? 'Detailed' : 'Quick';
+
+  loading(`Generating ${reportType} report…`);
   showColumn(rightEmpty, rightContent, true);
   rightContent.innerHTML = reportSkeleton();
 
@@ -320,57 +323,65 @@ btnReport.addEventListener('click', async () => {
       priorArtByParagraph[paraId].push(hit);
     });
 
-    // Analyze cross-paragraph patterns if we have prior art
     let synthesis = null;
     let paragraphAnalyses = null;
-    if (hits.length > 0) {
-      try {
-        const analysisRes = await fetch(`${API}/analyze-patterns`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            paragraphs: state.paragraphs,
-            prior_art_by_paragraph: priorArtByParagraph,
-          }),
-        });
-        if (analysisRes.ok) {
-          synthesis = await analysisRes.json();
-        }
-      } catch (e) {
-        console.warn('Pattern analysis failed:', e);
-      }
 
-      // Analyze individual paragraphs
-      try {
-        const paraRes = await fetch(`${API}/analyze-paragraphs`, {
+    if (detailedAnalysis && hits.length > 0) {
+      // Run all three analyses in PARALLEL for detailed report
+      const [synthesisRes, paraRes, reportRes] = await Promise.all([
+        fetch(`${API}/analyze-patterns`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             paragraphs: state.paragraphs,
             prior_art_by_paragraph: priorArtByParagraph,
           }),
-        });
+        }),
+        fetch(`${API}/analyze-paragraphs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paragraphs: state.paragraphs,
+            prior_art_by_paragraph: priorArtByParagraph,
+          }),
+        }),
+        fetch(`${API}/generate-report`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_text: fullText, prior_art_hits: hits }),
+        }),
+      ]);
+
+      if (reportRes.ok) {
+        const report = await reportRes.json();
+        if (synthesisRes.ok) {
+          synthesis = await synthesisRes.json();
+          report.synthesis = synthesis;
+        }
         if (paraRes.ok) {
           const paraData = await paraRes.json();
           paragraphAnalyses = paraData.analyses;
+          report.paragraph_analyses = paragraphAnalyses;
         }
-      } catch (e) {
-        console.warn('Paragraph analysis failed:', e);
+        console.log('Detailed report received:', report);
+        renderReport(report);
+        done('Detailed report ready');
+      } else {
+        throw new Error((await reportRes.json()).detail || reportRes.statusText);
       }
+    } else {
+      // Quick report: only generate main report (skip synthesis and paragraph analysis)
+      const res = await fetch(`${API}/generate-report`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_text: fullText, prior_art_hits: hits }),
+      });
+      if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+      const report = await res.json();
+      console.log('Quick report received:', report);
+      renderReport(report);
+      done('Quick report ready');
     }
-
-    const res = await fetch(`${API}/generate-report`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_text: fullText, prior_art_hits: hits }),
-    });
-    if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
-    const report = await res.json();
-    report.synthesis = synthesis;  // Attach synthesis analysis
-    report.paragraph_analyses = paragraphAnalyses;  // Attach paragraph analyses
-    console.log('Report received:', report);
-    renderReport(report);
-    done('Report ready');
   } catch (ex) {
     rightContent.innerHTML = `<p class="text-red-400 text-sm p-4">Failed to generate report: ${escapeHtml(ex.message)}</p>`;
     err('Report failed');
