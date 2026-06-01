@@ -53,6 +53,15 @@ function showColumn(emptyEl, contentEl, show) {
   contentEl.classList.toggle('hidden', !show);
 }
 
+// ── Sync report generation controls ─────────────────────────
+function setReportControlsEnabled(enabled) {
+  btnReport.disabled = !enabled;
+  const detailedCheckbox = document.getElementById('detailed-analysis-checkbox');
+  const detailedLabel = document.getElementById('detailed-label');
+  detailedCheckbox.disabled = !enabled;
+  detailedLabel.classList.toggle('disabled', !enabled);
+}
+
 // ── File upload ────────────────────────────────────────────
 fileInput.addEventListener('change', async e => {
   const file = e.target.files[0];
@@ -73,7 +82,7 @@ fileInput.addEventListener('change', async e => {
     renderParagraphs();
     renderClassification();
     done(`${data.total_paragraphs} paragraphs loaded`);
-    btnReport.disabled = false;
+    setReportControlsEnabled(true);
     // Reset right column
     showColumn(rightEmpty, rightContent, false);
   } catch (ex) {

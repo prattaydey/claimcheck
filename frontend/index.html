@@ -42,21 +42,24 @@
       </label>
       <input id="file-upload" type="file" accept=".txt,.md,.pdf" class="hidden" />
 
-      <!-- Generate Report button -->
-      <button id="btn-report"
-        class="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 transition text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
-        disabled>
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z"/>
-        </svg>
-        Generate Report
-      </button>
+      <!-- Report Generation Controls -->
+      <div class="flex items-center gap-2 px-2 py-1 rounded-lg bg-gray-800 border border-gray-700">
+        <!-- Generate Report button -->
+        <button id="btn-report"
+          class="flex items-center gap-2 px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-700 transition text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+          disabled>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z"/>
+          </svg>
+          Generate Report
+        </button>
 
-      <!-- Detailed Analysis checkbox -->
-      <label class="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition text-xs text-gray-400 cursor-pointer">
-        <input id="detailed-analysis-checkbox" type="checkbox" class="w-4 h-4 rounded" />
-        <span>Detailed</span>
-      </label>
+        <!-- Detailed Analysis checkbox -->
+        <label id="detailed-label" class="flex items-center gap-2 px-3 py-2 rounded-md transition text-xs text-gray-400 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed bg-gray-700 hover:bg-gray-600">
+          <input id="detailed-analysis-checkbox" type="checkbox" class="w-4 h-4 rounded" />
+          <span>Detailed</span>
+        </label>
+      </div>
 
       <!-- Status indicator -->
       <div id="status-indicator" class="flex items-center gap-2 text-xs text-gray-400">

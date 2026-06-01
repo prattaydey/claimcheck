@@ -179,3 +179,11 @@
   font-size: 0.7rem;
   border: 1px solid #4b5563;
 }
+
+/* ── Report controls disabled state ────────────────────────── */
+#detailed-label:has(input:disabled),
+#detailed-label.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+  cursor: not-allowed;
+}
