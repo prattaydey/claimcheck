@@ -13,6 +13,9 @@ from app.ingestion.extractor import classify_document
 from app.services.analytical import generate_report
 from app.services.rag_service import query_prior_art, query_prior_art_batch, query_prior_art_by_domains
 from app.services.synthesis import analyze_patterns, suggest_workarounds
+from app.services.paragraph_analysis import analyze_paragraph, analyze_paragraphs_batch, calculate_paragraph_risk_profile
+from app.services.key_dates import extract_patent_dates, calculate_patent_timeline, get_licensing_timeline
+from app.services.pdf_report import export_as_txt
 
 
 # Lifespan: seed ChromaDB on startup if collection is empty
@@ -111,6 +114,39 @@ class WorkaroundResponse(BaseModel):
     redesign_scope: str
     workarounds: list[dict]
     recommended_path: str
+
+
+class ParagraphAnalysisRequest(BaseModel):
+    paragraphs: list[dict]  # [{paragraph_id, text}]
+    prior_art_by_paragraph: dict  # {paragraph_id: [prior art results]}
+
+
+class ParagraphAnalysisResponse(BaseModel):
+    analyses: list[dict]
+    risk_profile: dict
+
+
+class ReportExportRequest(BaseModel):
+    invention_title: str
+    classification: dict
+    overall_risk_score: int
+    risk_breakdown: dict
+    paragraph_analyses: list[dict]
+    conflict_clusters: list[dict]
+    core_exposures: list[dict]
+    action_items: list[dict]
+    patent_timeline: dict
+
+
+class PatentTimelineRequest(BaseModel):
+    grant_date: str  # YYYY-MM-DD format
+
+
+class PatentTimelineResponse(BaseModel):
+    years_remaining: float | None
+    expiration_year: int | None
+    status: str
+    milestones: list[dict]
 
 
 # Routes
@@ -239,6 +275,58 @@ async def suggest_workarounds_endpoint(body: WorkaroundRequest):
         redesign_scope=result.get("redesign_scope", ""),
         workarounds=result.get("workarounds", []),
         recommended_path=result.get("recommended_path", ""),
+    )
+
+
+@app.post("/api/analyze-paragraphs", response_model=ParagraphAnalysisResponse)
+async def analyze_paragraphs_endpoint(body: ParagraphAnalysisRequest):
+    """Detailed clause-like analysis for each paragraph."""
+    if not body.paragraphs:
+        raise HTTPException(status_code=422, detail="'paragraphs' must not be empty.")
+
+    analyses = analyze_paragraphs_batch(body.paragraphs, body.prior_art_by_paragraph)
+    risk_profile = calculate_paragraph_risk_profile(analyses)
+
+    return ParagraphAnalysisResponse(
+        analyses=analyses,
+        risk_profile=risk_profile,
+    )
+
+
+@app.post("/api/patent-timeline", response_model=PatentTimelineResponse)
+async def patent_timeline_endpoint(body: PatentTimelineRequest):
+    """Calculate patent expiration timeline and milestones."""
+    if not body.grant_date:
+        raise HTTPException(status_code=422, detail="'grant_date' must not be empty.")
+
+    timeline = calculate_patent_timeline(body.grant_date)
+    return PatentTimelineResponse(
+        years_remaining=timeline.get("years_remaining"),
+        expiration_year=timeline.get("expiration_year"),
+        status=timeline.get("status"),
+        milestones=timeline.get("milestones", []),
+    )
+
+
+@app.post("/api/export-report")
+async def export_report_endpoint(body: ReportExportRequest):
+    """Export comprehensive report as text file."""
+    report_data = {
+        "invention_title": body.invention_title,
+        "classification": body.classification,
+        "overall_risk_score": body.overall_risk_score,
+        "risk_breakdown": body.risk_breakdown,
+        "paragraph_analyses": body.paragraph_analyses,
+        "conflict_clusters": body.conflict_clusters,
+        "core_exposures": body.core_exposures,
+        "action_items": body.action_items,
+        "patent_timeline": body.patent_timeline,
+    }
+
+    report_bytes = export_as_txt(report_data)
+    return JSONResponse(
+        content={"status": "success", "report": report_bytes.decode("utf-8")},
+        media_type="application/json",
     )
 
 
